@@ -1,9 +1,9 @@
 /**
- * 时序落盘:`~/.dsh/server-deck-metrics/{hostId}/raw.jsonl` + settings.json。
+ * 时序落盘:`~/.dsh/server-box-metrics/{hostId}/raw.jsonl` + settings.json。
  * 原始点保留约 3h;1 分钟 / 15 分钟 / 1 小时 rollup 分别留 24h / 7d / 31d。
  */
 
-import { appendFile, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { access, appendFile, mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -16,7 +16,9 @@ import {
 } from '../metrics.ts';
 import type { MetricPoint, MetricSample, MetricsSettings, NetMonthState } from '../types.ts';
 
-export const DEFAULT_METRICS_DIR = join(homedir(), '.dsh', 'server-deck-metrics');
+export const DEFAULT_METRICS_DIR = join(homedir(), '.dsh', 'server-box-metrics');
+/** 插件改名(dsh-server-deck → dsh-server-box)前的旧指标目录:首启整体挪过来。 */
+const LEGACY_METRICS_DIR = join(homedir(), '.dsh', 'server-deck-metrics');
 
 const RAW_KEEP_MS = 3 * 3600_000 + 5 * 60_000;
 const M1_KEEP_MS = 24 * 3600_000 + 10 * 60_000;
@@ -97,7 +99,23 @@ export class MetricStore {
 
   constructor(private readonly rootDir: string = DEFAULT_METRICS_DIR) {}
 
+  /**
+   * 改名迁移:旧 `server-deck-metrics` → `server-box-metrics`。
+   * 只在默认目录上做(测试传临时目录时旧目录不存在,且不该把真数据搬走)。
+   */
+  private async migrateLegacyDir(): Promise<void> {
+    if (this.rootDir !== DEFAULT_METRICS_DIR) return;
+    try {
+      await access(this.rootDir);
+      return; // 新目录已存在,视为已迁移
+    } catch { /* 新目录还没有,继续 */ }
+    try {
+      await rename(LEGACY_METRICS_DIR, this.rootDir);
+    } catch { /* 旧目录不存在 / 被占用:忽略,下启再试 */ }
+  }
+
   async load(): Promise<void> {
+    await this.migrateLegacyDir();
     await mkdir(this.rootDir, { recursive: true });
     try {
       const raw = JSON.parse(await readFile(join(this.rootDir, 'settings.json'), 'utf8')) as Record<string, unknown>;

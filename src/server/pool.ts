@@ -150,7 +150,7 @@ export class HostPool {
             let stderr = '';
             const timer = setTimeout(() => {
               stream.close();
-              resolve({ code: null, stdout, stderr: `${stderr}\n[server-deck] 命令超时(${timeoutMs}ms)` });
+              resolve({ code: null, stdout, stderr: `${stderr}\n[server-box] 命令超时(${timeoutMs}ms)` });
             }, timeoutMs);
             stream.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
             stream.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });

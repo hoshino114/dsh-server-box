@@ -1,5 +1,5 @@
 /**
- * 终端视图:xterm.js ↔ /server-deck/ws/pty WebSocket。
+ * 终端视图:xterm.js ↔ /server-box/ws/pty WebSocket。
  * 帧协议见 src/server/pty.ts——stdin 直传,{"type":"resize"} 调窗。
  */
 
@@ -45,7 +45,7 @@ export function TerminalPane(props: TerminalPaneProps): React.ReactNode {
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(el);
-    term.writeln(`\x1b[90m[server-deck] 正在连接 ${props.name}(${props.endpoint}) …\x1b[0m`);
+    term.writeln(`\x1b[90m[server-box] 正在连接 ${props.name}(${props.endpoint}) …\x1b[0m`);
     try { fit.fit(); } catch { /* 容器未布局完 */ }
 
     let ws: WebSocket | null = null;
@@ -57,7 +57,7 @@ export function TerminalPane(props: TerminalPaneProps): React.ReactNode {
     try {
       url = ptyUrl(props.hostId, Math.max(term.cols, 2), Math.max(term.rows, 2));
     } catch (error) {
-      term.writeln(`\r\n\x1b[31m[server-deck] ${error instanceof Error ? error.message : String(error)}\x1b[0m`);
+      term.writeln(`\r\n\x1b[31m[server-box] ${error instanceof Error ? error.message : String(error)}\x1b[0m`);
       return () => {
         disposed = true;
         term.dispose();
@@ -74,10 +74,10 @@ export function TerminalPane(props: TerminalPaneProps): React.ReactNode {
       term.write(typeof ev.data === 'string' ? ev.data : new Uint8Array(ev.data));
     };
     ws.onclose = (ev: CloseEvent) => {
-      if (!disposed) term.writeln(`\r\n\x1b[90m[server-deck] 连接已关闭${ev.reason !== '' && ev.reason.length > 0 ? ':' + ev.reason : ''}\x1b[0m`);
+      if (!disposed) term.writeln(`\r\n\x1b[90m[server-box] 连接已关闭${ev.reason !== '' && ev.reason.length > 0 ? ':' + ev.reason : ''}\x1b[0m`);
     };
     ws.onerror = () => {
-      if (!disposed) term.writeln('\r\n\x1b[31m[server-deck] WebSocket 错误\x1b[0m');
+      if (!disposed) term.writeln('\r\n\x1b[31m[server-box] WebSocket 错误\x1b[0m');
     };
     const dataSub = term.onData((d) => {
       if (ws !== null && ws.readyState === WebSocket.OPEN) ws.send(d);

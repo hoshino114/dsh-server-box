@@ -1,5 +1,5 @@
 /**
- * /server-deck/api REST 路由:
+ * /server-box/api REST 路由:
  *   GET    /hosts                 台账列表(无秘密)
  *   POST   /hosts                 新增(可含 password/passphrase,落 0600 secrets)
  *   PATCH  /hosts/<id>            更新
@@ -175,7 +175,7 @@ function parseMs(raw: string | null): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** 创建 API 路由处理器(prefix:/server-deck/api)。 */
+/** 创建 API 路由处理器(prefix:/server-box/api)。 */
 export function createApiRouter(
   store: HostStore,
   ssh: HostPool,
@@ -190,7 +190,7 @@ export function createApiRouter(
     }
     const url = new URL(req.url ?? '/', 'http://loopback');
     const raw = url.pathname;
-    const stripped = raw.startsWith('/server-deck/api') ? raw.slice('/server-deck/api'.length) : raw;
+    const stripped = raw.startsWith('/server-box/api') ? raw.slice('/server-box/api'.length) : raw;
     const path = stripped.replace(/\/+$/, '') || '/';
     const method = req.method ?? 'GET';
 

@@ -22,21 +22,21 @@ export function registerExecTools(
   recorder: MetricRecorder,
 ): void {
   ctx.systemPrompt.section({
-    name: 'tool:server_deck',
+    name: 'tool:server_box',
     order: 125,
     text: [
-      'Use server_deck_hosts then server_deck_exec to run a non-interactive command on a host from the Server Deck ledger (same SSH as the card terminal, not the open xterm).',
+      'Use server_box_hosts then server_box_exec to run a non-interactive command on a host from the Server Box ledger (same SSH as the card terminal, not the open xterm).',
       'Identify the machine with id / name / IP. On Windows OpenSSH, commands are wrapped for PowerShell DefaultShell; prefix cmd.exe / powershell.exe if you need a specific interpreter.',
-      'To move files to or from such a host use server_deck_upload (local → remote) and server_deck_download (remote → local); they use SFTP, one file at a time.',
+      'To move files to or from such a host use server_box_upload (local → remote) and server_box_download (remote → local); they use SFTP, one file at a time.',
       'Do not use these tools for interactive sudo/password prompts — tell the user to open the card terminal.',
     ].join(' '),
   });
 
   ctx.tools.register(
     defineTool({
-      name: 'server_deck_hosts',
+      name: 'server_box_hosts',
       description:
-        'List Server Deck ledger hosts (id, name, address, username, tags, last probed OS). No secrets.',
+        'List Server Box ledger hosts (id, name, address, username, tags, last probed OS). No secrets.',
       parameters: {},
       output: {
         schema: {
@@ -96,9 +96,9 @@ export function registerExecTools(
 
   ctx.tools.register(
     defineTool({
-      name: 'server_deck_exec',
+      name: 'server_box_exec',
       description:
-        'Run one non-interactive command on a Server Deck host over SSH. Returns exit code, stdout and stderr. Not the card xterm; no secrets in the result.',
+        'Run one non-interactive command on a Server Box host over SSH. Returns exit code, stdout and stderr. Not the card xterm; no secrets in the result.',
       parameters: {
         host: {
           type: 'string',

@@ -1,8 +1,8 @@
 /**
- * server-deck 文件传输 + PTY 桥(host 半区)联机自测:
+ * server-box 文件传输 + PTY 桥(host 半区)联机自测:
  *   起一个独立回环 HTTP 服务挂 createApiRouter / createPtyRoute,对台账里的
  *   真实主机跑 列目录 → 上传 → 下载校验 → 建目录 → 递归删除 → 404 → WS 终端回显。
- * 只读 ~/.dsh/server-deck*.json(不写台账),测试文件跑完自清理。
+ * 只读 ~/.dsh/server-box*.json(不写台账),测试文件跑完自清理。
  * 用法:pnpm exec node --experimental-transform-types scripts/itest-live.mjs
  */
 
@@ -43,7 +43,7 @@ const server = createServer((req, res) => {
 });
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const port = server.address().port;
-const base = `http://127.0.0.1:${port}/server-deck/api`;
+const base = `http://127.0.0.1:${port}/server-box/api`;
 
 // 模拟 dsh-host-webserver 的 upgrade 分发:精确路径匹配,未命中直接断开
 const ptyRoute = createPtyRoute(pool, (id) => store.get(id) !== undefined);
@@ -85,7 +85,7 @@ try {
   }
 
   const remoteFile = `${home}/.sd-itest-upload.txt`;
-  const payload = Buffer.from(`server-deck itest ${new Date().toISOString()}\n中文内容 ✓\n`, 'utf8');
+  const payload = Buffer.from(`server-box itest ${new Date().toISOString()}\n中文内容 ✓\n`, 'utf8');
   const sha = (buf) => createHash('sha256').update(buf).digest('hex');
 
   // 3. 上传(原始字节流)
@@ -177,7 +177,7 @@ try {
   // 8. WS PTY 桥(卡片终端)
   {
     const { WebSocket } = await import('ws');
-    const url = `ws://127.0.0.1:${port}/server-deck/ws/pty?host=${encodeURIComponent(host.id)}&cols=80&rows=24`;
+    const url = `ws://127.0.0.1:${port}/server-box/ws/pty?host=${encodeURIComponent(host.id)}&cols=80&rows=24`;
     const ws = new WebSocket(url);
     let received = '';
     await new Promise((resolve, reject) => {
@@ -196,7 +196,7 @@ try {
     }
 
     // 未注册的升级路径:模拟 webserver「未命中即断开」
-    const bogus = new WebSocket(`ws://127.0.0.1:${port}/server-deck/ws/nope?host=${host.id}`);
+    const bogus = new WebSocket(`ws://127.0.0.1:${port}/server-box/ws/nope?host=${host.id}`);
     const failedHandshake = await new Promise((resolve) => {
       const timer = setTimeout(() => resolve(false), 5000);
       bogus.on('error', () => { clearTimeout(timer); resolve(true); });
@@ -205,7 +205,7 @@ try {
     check('未注册升级路径被拒绝', failedHandshake);
   }
 
-  // 9. 对话工具:server_deck_upload / server_deck_download
+  // 9. 对话工具:server_box_upload / server_box_download
   {
     const { registerTransferTools } = await import(`${SRC}/server/transfer-tools.ts`);
     const tools = new Map();
@@ -216,7 +216,7 @@ try {
     );
     check(
       '传输工具已注册',
-      tools.has('server_deck_upload') && tools.has('server_deck_download'),
+      tools.has('server_box_upload') && tools.has('server_box_download'),
       [...tools.keys()].join(','),
     );
 
@@ -230,17 +230,17 @@ try {
       await fsp.writeFile(localUp, content, 'utf8');
       const remoteToolPath = `${home}/.sd-itest-tool.txt`;
 
-      const up = await tools.get('server_deck_upload')
+      const up = await tools.get('server_box_upload')
         .execute({ host: host.id, local_path: localUp, remote_path: remoteToolPath });
-      check('server_deck_upload', up.bytes === Buffer.byteLength(content), `bytes=${up.bytes}`);
+      check('server_box_upload', up.bytes === Buffer.byteLength(content), `bytes=${up.bytes}`);
 
       const localDown = pathMod.join(tmp, 'down.txt');
-      const down = await tools.get('server_deck_download')
+      const down = await tools.get('server_box_download')
         .execute({ host: host.id, remote_path: remoteToolPath, local_path: localDown });
       const readBack = await fsp.readFile(localDown, 'utf8');
-      check('server_deck_download', down.bytes > 0 && readBack === content, `bytes=${down.bytes}`);
+      check('server_box_download', down.bytes > 0 && readBack === content, `bytes=${down.bytes}`);
 
-      const miss = await tools.get('server_deck_download')
+      const miss = await tools.get('server_box_download')
         .execute({ host: host.id, remote_path: `${home}/nope-${Date.now()}.bin`, local_path: pathMod.join(tmp, 'x.bin') })
         .then(() => null, (error) => error);
       check('下载不存在文件报错', miss instanceof Error, String(miss?.message ?? miss));

@@ -2,10 +2,10 @@
  * 客户端本地偏好:面板宽度 / 自动刷新周期 / 趋势窗口与粒度(localStorage,损坏自动回落)。
  */
 
-const WIDTH_KEY = 'serverDeck.width';
-const REFRESH_KEY = 'serverDeck.refreshSec';
-const RANGE_KEY = 'serverDeck.trendRange';
-const BUCKET_KEY = 'serverDeck.trendBucket';
+const WIDTH_KEY = 'serverBox.width';
+const REFRESH_KEY = 'serverBox.refreshSec';
+const RANGE_KEY = 'serverBox.trendRange';
+const BUCKET_KEY = 'serverBox.trendBucket';
 
 export function loadPanelWidth(): number {
   const raw = globalThis.localStorage?.getItem(WIDTH_KEY);

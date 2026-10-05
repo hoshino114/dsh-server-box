@@ -41,12 +41,12 @@ test('错误映射:不存在 404 / 无权限 403 / 已存在 409', () => {
 
 test('wsUrlFrom:http→ws、https→wss,路径与查询保留', () => {
   assert.equal(
-    wsUrlFrom('http://127.0.0.1:19387', '/server-deck/ws/pty?host=a'),
-    'ws://127.0.0.1:19387/server-deck/ws/pty?host=a',
+    wsUrlFrom('http://127.0.0.1:19387', '/server-box/ws/pty?host=a'),
+    'ws://127.0.0.1:19387/server-box/ws/pty?host=a',
   );
   assert.equal(
-    wsUrlFrom('https://example.test:8443', '/server-deck/ws/pty?host=a'),
-    'wss://example.test:8443/server-deck/ws/pty?host=a',
+    wsUrlFrom('https://example.test:8443', '/server-box/ws/pty?host=a'),
+    'wss://example.test:8443/server-box/ws/pty?host=a',
   );
 });
 
@@ -59,7 +59,7 @@ test('桌面端 hostOrigin 取 __DSH_TRANSPORT__.streamBaseUrl', () => {
     // 桌面端页面是 dsh-app://app,location.host 为 'app'——ptyUrl 必须落到回环 origin
     assert.equal(
       ptyUrl('srv_1', 80, 24),
-      'ws://127.0.0.1:19387/server-deck/ws/pty?host=srv_1&cols=80&rows=24',
+      'ws://127.0.0.1:19387/server-box/ws/pty?host=srv_1&cols=80&rows=24',
     );
     g.__DSH_TRANSPORT__ = { streamBaseUrl: 'not-a-url' };
     assert.throws(() => hostOrigin(), /无法确定 Host 地址/);

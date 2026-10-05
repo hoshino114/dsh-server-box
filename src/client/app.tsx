@@ -57,7 +57,7 @@ function fmtPct(v: number | undefined): string {
   return v === undefined ? '—' : `${String(Math.round(v * 10) / 10)}%`;
 }
 
-export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
+export function ServerBoxApp(props: { visible: boolean }): React.ReactNode {
   const [hosts, setHosts] = useState<readonly HostEntry[]>([]);
   const [statuses, setStatuses] = useState<Record<string, HostStatus>>({});
   const [view, setView] = useState<View>({ kind: 'grid' });
@@ -796,7 +796,7 @@ function HostForm(props: {
         </button>
         <button className="sd-btn" onClick={props.onCancel}>取消</button>
       </div>
-      <div className="sd-line">密码/口令只保存在本机 ~/.dsh/server-deck.secrets.json(0600),不随台账回传。</div>
+      <div className="sd-line">密码/口令只保存在本机 ~/.dsh/server-box.secrets.json(0600),不随台账回传。</div>
     </div>
   );
 }

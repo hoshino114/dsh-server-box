@@ -60,4 +60,4 @@ await build({
   footer: { js: footer },
 });
 
-console.log('server-deck: lib/index.js + lib/client.js 构建完成');
+console.log('server-box: lib/index.js + lib/client.js 构建完成');

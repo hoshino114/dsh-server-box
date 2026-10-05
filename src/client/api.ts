@@ -1,5 +1,5 @@
 /**
- * 浏览器端 API 封装:/server-deck/api/*。
+ * 浏览器端 API 封装:/server-box/api/*。
  */
 
 import type {
@@ -13,7 +13,7 @@ import type {
 } from '../types.ts';
 
 async function jfetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`/server-deck/api${path}`, {
+  const res = await fetch(`/server-box/api${path}`, {
     headers: { 'content-type': 'application/json' },
     ...init,
   });
@@ -128,7 +128,7 @@ export function wsUrlFrom(origin: string, pathWithQuery: string): string {
 /** PTY WebSocket 地址(绝对地址,桌面端 / Web 端通用)。 */
 export function ptyUrl(hostId: string, cols: number, rows: number): string {
   const q = new URLSearchParams({ host: hostId, cols: String(cols), rows: String(rows) });
-  return wsUrlFrom(hostOrigin(), `/server-deck/ws/pty?${q}`);
+  return wsUrlFrom(hostOrigin(), `/server-box/ws/pty?${q}`);
 }
 
 // ---------- 文件传输(SFTP 桥) ----------
@@ -180,7 +180,7 @@ function errorFromBody(res: Response, body: unknown, fallback: string): Error {
 /** 下载远端文件为 Blob(桌面端经 Electron 代理,同源读取无 CORS 限制)。 */
 export async function downloadRemoteFile(hostId: string, path: string): Promise<{ blob: Blob; filename: string }> {
   const q = new URLSearchParams({ path });
-  const res = await fetch(`/server-deck/api/hosts/${encodeURIComponent(hostId)}/files/content?${q}`);
+  const res = await fetch(`/server-box/api/hosts/${encodeURIComponent(hostId)}/files/content?${q}`);
   if (!res.ok) {
     let body: unknown = null;
     try { body = await res.json(); } catch { /* 非 JSON */ }
@@ -193,7 +193,7 @@ export async function downloadRemoteFile(hostId: string, path: string): Promise<
 /** 上传到远端(path 为目标完整路径)。 */
 export async function uploadRemoteFile(hostId: string, path: string, data: Blob): Promise<{ ok: true; path: string; bytes: number }> {
   const q = new URLSearchParams({ path });
-  const res = await fetch(`/server-deck/api/hosts/${encodeURIComponent(hostId)}/files/upload?${q}`, {
+  const res = await fetch(`/server-box/api/hosts/${encodeURIComponent(hostId)}/files/upload?${q}`, {
     method: 'POST',
     headers: { 'content-type': 'application/octet-stream' },
     body: data,

@@ -1,7 +1,7 @@
 /**
  * SFTP 文件传输:台账主机的列目录 / 读写 / 建删,走池内长连接的独立 SFTP 通道。
  *
- * 与 REST(仅回环)一致,访问面只在 /server-deck/api 暴露;秘密仍来自
+ * 与 REST(仅回环)一致,访问面只在 /server-box/api 暴露;秘密仍来自
  * HostStore 的 secrets,不进台账也不回传。路径同时兼容 POSIX 与
  * Windows OpenSSH(反斜杠),由 realpath 结果判定分隔符。
  */

@@ -6,7 +6,7 @@
  * 「轮询探测 ctx.betterSidebar」永远失败(github-workbench 的旧方案即因此
  * 静默降级成抽屉)。因此这里改为:
  *   - 形态〇(DSH 0.1.5+):`ctx.inject(['sidebarRightTabs'])` 等官方原生
- *     右侧栏服务 → 注册 tab 类型(kind `server-deck`)+ `sidebar.right.pane.tab`
+ *     右侧栏服务 → 注册 tab 类型(kind `server-box`)+ `sidebar.right.pane.tab`
  *     / `.title` 座位挂内容体。参照 better-sidebar 0.19 的 native/index.ts:
  *     座位声明早于服务 provide,不能靠声明触发,必须等服务本身。
  *   - 形态一(旧宿主):外层插件无强制 inject,内层用
@@ -21,15 +21,15 @@
 
 import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { ServerDeckApp } from './app.tsx';
+import { ServerBoxApp } from './app.tsx';
 import { loadPanelWidth, savePanelWidth } from './config.ts';
 import { ensureStyles } from './styles.ts';
 
-export const TAB_ID = 'server-deck:servers';
+export const TAB_ID = 'server-box:servers';
 
 /** 官方原生右侧栏:本插件的实现 id(kind 的 openTab 名)。 */
-const NATIVE_ID = 'dsh-server-deck';
-const NATIVE_KIND = 'server-deck';
+const NATIVE_ID = 'dsh-server-box';
+const NATIVE_KIND = 'server-box';
 
 /** 内层子插件上下文的最小形状。 */
 interface InnerCtx {
@@ -103,7 +103,7 @@ function serverIcon(size: number = 16): React.ReactNode {
 
 /** 原生座位的内容体:框架注入 sessionId,这里恒可见(仅活动 pane 渲染)。 */
 function NativeBody(): React.ReactNode {
-  return createElement(ServerDeckApp, { visible: true });
+  return createElement(ServerBoxApp, { visible: true });
 }
 
 /** 原生座位的标签标题:静态文案,忽略框架 props。 */
@@ -111,7 +111,7 @@ function NativeTitle(): React.ReactNode {
   return '服务器';
 }
 
-export function mountServerDeck(ctx: MountCtx): () => void {
+export function mountServerBox(ctx: MountCtx): () => void {
   ensureStyles();
 
   // hash 自举:#sd-* 开头的深链在页签就绪后主动打开。供深链/截图/外部触发使用。
@@ -143,7 +143,7 @@ export function mountServerDeck(ctx: MountCtx): () => void {
     order: 45,
     single: true,
     component: (props: { visible: boolean }) =>
-      createElement(ServerDeckApp, { visible: props.visible }),
+      createElement(ServerBoxApp, { visible: props.visible }),
   };
 
   // ---------- 形态〇:官方原生右侧栏(DSH 0.1.5+) ----------
@@ -192,12 +192,12 @@ export function mountServerDeck(ctx: MountCtx): () => void {
             }, NativeTitle)),
           );
         } else {
-          console.warn('[server-deck] ctx.slots 不可用,原生内容体未注册');
+          console.warn('[server-box] ctx.slots 不可用,原生内容体未注册');
         }
 
         nativeOpen = (): void => {
           try { sidebarRight?.openTab(NATIVE_KIND); }
-          catch (error) { console.warn('[server-deck] 原生 openTab 失败:', error); }
+          catch (error) { console.warn('[server-box] 原生 openTab 失败:', error); }
         };
 
         nativeDisposer = (): void => {
@@ -208,7 +208,7 @@ export function mountServerDeck(ctx: MountCtx): () => void {
         };
 
         if (bootHash !== null) nativeOpen();
-        (globalThis as Record<string, unknown>).__serverDeck = { open: openActiveTab };
+        (globalThis as Record<string, unknown>).__serverBox = { open: openActiveTab };
 
         // 原生页签已挂:独立抽屉若已兜底开启,收掉(宽度偏好已持久化)。
         if (drawerDisposer !== null) {
@@ -220,7 +220,7 @@ export function mountServerDeck(ctx: MountCtx): () => void {
       });
       seatDisposer = typeof seat?.dispose === 'function' ? () => seat.dispose?.() : undefined;
     } catch (error) {
-      console.warn('[server-deck] 原生右侧栏等待启动失败:', error);
+      console.warn('[server-box] 原生右侧栏等待启动失败:', error);
     }
   }
 
@@ -229,7 +229,7 @@ export function mountServerDeck(ctx: MountCtx): () => void {
   if (typeof ctx.plugin === 'function') {
     try {
       const fiber = ctx.plugin({
-        name: 'server-deck:sidebar-tab',
+        name: 'server-box:sidebar-tab',
         inject: ['betterSidebar'],
         apply: (inner) => {
           inner.effect(() => {
@@ -238,7 +238,7 @@ export function mountServerDeck(ctx: MountCtx): () => void {
             try {
               tabDisposer = inner.betterSidebar.registerTab(descriptor) ?? null;
             } catch (error) {
-              console.warn('[server-deck] registerTab 失败:', error);
+              console.warn('[server-box] registerTab 失败:', error);
               return;
             }
             form = 'sidebar';
@@ -246,16 +246,16 @@ export function mountServerDeck(ctx: MountCtx): () => void {
               try {
                 // path 种子使本次成为内容型打开 → 面板自动展开
                 inner.betterSidebar.openTab?.({ type: TAB_ID, path: '#auto', title: '服务器' });
-              } catch (error) { console.warn('[server-deck] open 失败:', error); }
+              } catch (error) { console.warn('[server-box] open 失败:', error); }
             };
             if (bootHash !== null) {
               try {
                 inner.betterSidebar.openTab?.({ type: TAB_ID, path: '#boot', title: '服务器' });
               } catch (error) {
-                console.warn('[server-deck] 深链打开页签失败:', error);
+                console.warn('[server-box] 深链打开页签失败:', error);
               }
             }
-            (globalThis as Record<string, unknown>).__serverDeck = { open: openActiveTab };
+            (globalThis as Record<string, unknown>).__serverBox = { open: openActiveTab };
             // 页签已挂:独立抽屉若已兜底开启,收掉(宽度偏好已持久化)
             if (drawerDisposer !== null) {
               drawerDisposer();
@@ -266,15 +266,15 @@ export function mountServerDeck(ctx: MountCtx): () => void {
               sidebarOpen = null;
               if (form === 'sidebar') form = 'none';
             };
-          }, 'server-deck: register tab');
+          }, 'server-box: register tab');
         },
       });
       fiberDisposer = typeof fiber?.dispose === 'function' ? () => fiber.dispose?.() : undefined;
     } catch (error) {
-      console.warn('[server-deck] 动态子插件启动失败:', error);
+      console.warn('[server-box] 动态子插件启动失败:', error);
     }
   } else {
-    console.warn('[server-deck] ctx.plugin 不可用,仅独立面板形态可用');
+    console.warn('[server-box] ctx.plugin 不可用,仅独立面板形态可用');
   }
 
   // ---------- 形态二:宽限期内无任何页签 → 独立右侧面板兜底 ----------
@@ -305,7 +305,7 @@ export function mountServerDeck(ctx: MountCtx): () => void {
 
 function mountStandalone(): () => void {
   const host = document.createElement('div');
-  host.setAttribute('data-serverdeck-host', '');
+  host.setAttribute('data-serverbox-host', '');
   host.style.cssText = [
     'position:fixed', 'top:0', 'right:0', 'bottom:0', 'z-index:40',
     'display:flex', 'align-items:stretch', 'pointer-events:none',
@@ -367,7 +367,7 @@ function mountStandalone(): () => void {
   let visible = true;
 
   function render(): void {
-    root?.render(createElement(ServerDeckApp, { visible }));
+    root?.render(createElement(ServerBoxApp, { visible }));
   }
 
   function setCollapsed(v: boolean): void {

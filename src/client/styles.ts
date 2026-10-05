@@ -5,7 +5,7 @@
 
 import { XTERM_CSS } from './xterm-css.generated.ts';
 
-const STYLE_ID = 'server-deck-styles';
+const STYLE_ID = 'server-box-styles';
 
 const APP_CSS = `
 .sd-app{display:flex;flex-direction:column;height:100%;min-height:0;

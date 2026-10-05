@@ -1,5 +1,5 @@
 /**
- * PTY WebSocket 桥:/server-deck/ws/pty?host=<id>&cols=<n>&rows=<n>
+ * PTY WebSocket 桥:/server-box/ws/pty?host=<id>&cols=<n>&rows=<n>
  *
  * dsh-host-webserver 的升级路由把协商交给路由所有者——这里用 ws 的
  * noServer 模式完成握手,然后把 xterm 的帧双向桥接到 ssh2 shell 流。
@@ -21,7 +21,7 @@ export function createPtyRoute(pool: HostPool, resolveHostId: (id: string) => bo
   const wss = new WebSocketServer({ noServer: true });
 
   return {
-    path: '/server-deck/ws/pty',
+    path: '/server-box/ws/pty',
     handler(req, socket, head) {
       const remote = req.socket.remoteAddress ?? '';
       if (!(remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1')) {
@@ -61,7 +61,7 @@ async function bridge(
     stream = await pool.shell(hostId, cols, rows);
   } catch (error) {
     if (ws.readyState === ws.OPEN) {
-      ws.send(`\x1b[31m[server-deck] ${error instanceof Error ? error.message : String(error)}\x1b[0m\r\n`);
+      ws.send(`\x1b[31m[server-box] ${error instanceof Error ? error.message : String(error)}\x1b[0m\r\n`);
       ws.close(1011, 'shell failed');
     }
     return;

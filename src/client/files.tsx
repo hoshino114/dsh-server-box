@@ -1,7 +1,7 @@
 /**
  * 文件传输视图:远端目录浏览 + 上传 / 下载 / 建目录 / 删除。
  *
- * 走 /server-deck/api/hosts/<id>/files*(SFTP 桥),桌面端经 Electron 代理,
+ * 走 /server-box/api/hosts/<id>/files*(SFTP 桥),桌面端经 Electron 代理,
  * Web 端同源直连;下载用 fetch→Blob→a[download],上传把 File 直接当请求体。
  */
 

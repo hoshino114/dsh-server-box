@@ -1,5 +1,5 @@
 /**
- * server-deck 共享类型(host / client 两半都用)。
+ * server-box 共享类型(host / client 两半都用)。
  */
 
 /** 认证方式。 */

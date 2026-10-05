@@ -1,14 +1,14 @@
 /**
- * server-deck 能力插件:服务器卡片仪表盘。
+ * server-box 能力插件:服务器卡片仪表盘。
  *
  * 服务端(本文件):
- *   - /server-deck/api/*  主机台账 CRUD + 连通测试 + 状态快照 + 趋势查询(仅回环)
- *   - /server-deck/api/hosts/<id>/files*  SFTP 文件传输:列目录 / 上传 / 下载 / 建目录 / 删除
- *   - /server-deck/ws/pty 升级路由:xterm 终端 ↔ ssh2 shell 双向桥
+ *   - /server-box/api/*  主机台账 CRUD + 连通测试 + 状态快照 + 趋势查询(仅回环)
+ *   - /server-box/api/hosts/<id>/files*  SFTP 文件传输:列目录 / 上传 / 下载 / 建目录 / 删除
+ *   - /server-box/ws/pty 升级路由:xterm 终端 ↔ ssh2 shell 双向桥
  *   - MetricRecorder 常驻采集(默认 10s),与前端是否打开面板无关
  *   - SarBackfill:本地序列未覆盖的窗口,从服务器 sysstat(sar)回填历史
- *   - server_deck_hosts / server_deck_exec:对话里对台账主机非交互 SSH 下发(不走卡片 xterm)
- *   - server_deck_upload / server_deck_download:对话里本机 ⇄ 台账主机的 SFTP 传输
+ *   - server_box_hosts / server_box_exec:对话里对台账主机非交互 SSH 下发(不走卡片 xterm)
+ *   - server_box_upload / server_box_download:对话里本机 ⇄ 台账主机的 SFTP 传输
  *
  * 客户端(lib/client.js):双形态挂载——ctx.betterSidebar 可用 → registerTab
  * 「服务器」页签;不可用 → 自绘右侧展开/收起面板(见 src/mount.ts)。
@@ -28,7 +28,7 @@ import { registerExecTools } from './server/exec-tools.ts';
 import { registerTransferTools } from './server/transfer-tools.ts';
 
 /** Cordis 插件名,loader 诊断使用。 */
-const name = 'server-deck';
+const name = 'server-box';
 
 /** 本插件依赖的上下文服务:webServer 注册 HTTP 与 upgrade 路由;tools / systemPrompt 注册对话下发。 */
 const inject = ['webServer', 'tools', 'systemPrompt'];
@@ -48,12 +48,12 @@ export function apply(ctx: Context): void {
     try {
       await store.load();
     } catch (error) {
-      console.warn('[server-deck] 台账加载失败(将以空台账运行):', error);
+      console.warn('[server-box] 台账加载失败(将以空台账运行):', error);
     }
     try {
       await metrics.load();
     } catch (error) {
-      console.warn('[server-deck] 指标库加载失败(将以空序列运行):', error);
+      console.warn('[server-box] 指标库加载失败(将以空序列运行):', error);
     }
     recorder.start();
   })();
@@ -61,22 +61,22 @@ export function apply(ctx: Context): void {
   ctx.effect(() => () => {
     recorder.stop();
     pool.closeAll();
-  }, 'server-deck: dispose connections');
+  }, 'server-box: dispose connections');
 
   ctx.effect(
     () =>
       ctx.webServer.register({
         kind: 'prefix',
-        path: '/server-deck/api',
+        path: '/server-box/api',
         handler: createApiRouter(store, pool, metrics, recorder, backfill),
       }),
-    'server-deck: rest api',
+    'server-box: rest api',
   );
 
   ctx.effect(
     () =>
       ctx.webServer.registerUpgrade(createPtyRoute(pool, (id) => store.get(id) !== undefined)),
-    'server-deck: pty upgrade route',
+    'server-box: pty upgrade route',
   );
 
   registerExecTools(ctx as Parameters<typeof registerExecTools>[0], store, pool, recorder);

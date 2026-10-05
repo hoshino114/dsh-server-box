@@ -1,7 +1,7 @@
 /**
  * 对话侧文件传输工具:本机 ⇄ 台账主机的 SFTP 上传 / 下载。
  *
- * 与 server_deck_exec 同一条池内 SSH 连接,只是另开 SFTP 通道;
+ * 与 server_box_exec 同一条池内 SSH 连接,只是另开 SFTP 通道;
  * 本机侧走 Node fs(工作区路径由调用方给出),远端路径同时兼容
  * POSIX 与 Windows OpenSSH。不经过卡片 xterm,也不暴露成浏览器 REST。
  */
@@ -34,9 +34,9 @@ export function registerTransferTools(
 ): void {
   ctx.tools.register(
     defineTool({
-      name: 'server_deck_upload',
+      name: 'server_box_upload',
       description:
-        'Copy one local file to a Server Deck host over SFTP (local path → remote path). Creates missing parent directories on the local side only; remote parent must exist. Returns bytes written.',
+        'Copy one local file to a Server Box host over SFTP (local path → remote path). Creates missing parent directories on the local side only; remote parent must exist. Returns bytes written.',
       parameters: {
         host: HOST_PARAM,
         local_path: {
@@ -95,9 +95,9 @@ export function registerTransferTools(
 
   ctx.tools.register(
     defineTool({
-      name: 'server_deck_download',
+      name: 'server_box_download',
       description:
-        'Copy one remote file from a Server Deck host over SFTP (remote path → local path). Missing local parent directories are created. Directories are refused — download files one by one.',
+        'Copy one remote file from a Server Box host over SFTP (remote path → local path). Missing local parent directories are created. Directories are refused — download files one by one.',
       parameters: {
         host: HOST_PARAM,
         remote_path: {

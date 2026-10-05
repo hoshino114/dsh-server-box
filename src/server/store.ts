@@ -1,17 +1,31 @@
 /**
- * 主机台账持久化:`~/.dsh/server-deck.json`(公开字段,0644)
- * + `~/.dsh/server-deck.secrets.json`(password/passphrase,0600,永不回传)。
+ * 主机台账持久化:`~/.dsh/server-box.json`(公开字段,0644)
+ * + `~/.dsh/server-box.secrets.json`(password/passphrase,0600,永不回传)。
  * 原子写:临时文件 + rename。
  */
 
-import { mkdir, readFile, chmod, rename, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, chmod, rename, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { AuthKind, HostEntry, HostInput } from '../types.ts';
 
 const DSH_DIR = join(homedir(), '.dsh');
-const HOSTS_FILE = join(DSH_DIR, 'server-deck.json');
-const SECRETS_FILE = join(DSH_DIR, 'server-deck.secrets.json');
+const HOSTS_FILE = join(DSH_DIR, 'server-box.json');
+const SECRETS_FILE = join(DSH_DIR, 'server-box.secrets.json');
+/** 插件改名(dsh-server-deck → dsh-server-box)前的旧台账文件:首启自动迁移。 */
+const LEGACY_HOSTS_FILE = join(DSH_DIR, 'server-deck.json');
+const LEGACY_SECRETS_FILE = join(DSH_DIR, 'server-deck.secrets.json');
+
+/** 新文件不存在且旧文件存在时把旧文件挪过来(改名迁移,失败静默——下启再试)。 */
+async function migrateLegacyFile(from: string, to: string): Promise<void> {
+  try {
+    await access(to);
+    return; // 新名已有内容,不覆盖
+  } catch { /* 新名不存在,继续尝试迁移 */ }
+  try {
+    await rename(from, to);
+  } catch { /* 旧名也不存在 / 被占用:忽略 */ }
+}
 
 interface SecretsBlob {
   [hostId: string]: { password?: string; passphrase?: string };
@@ -101,6 +115,8 @@ export class HostStore {
 
   async load(): Promise<void> {
     await mkdir(DSH_DIR, { recursive: true });
+    await migrateLegacyFile(LEGACY_HOSTS_FILE, HOSTS_FILE);
+    await migrateLegacyFile(LEGACY_SECRETS_FILE, SECRETS_FILE);
     this.blob = await readJson<HostsBlob>(HOSTS_FILE, { version: 1, hosts: [] });
     if (!Array.isArray(this.blob.hosts)) this.blob.hosts = [];
     this.secrets = await readJson<SecretsBlob>(SECRETS_FILE, {});
