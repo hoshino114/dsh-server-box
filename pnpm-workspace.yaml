@@ -1,0 +1,7 @@
+# pnpm 10+ 默认不执行依赖的安装脚本,这里按需放行(与 DSH 桌面 profile 同款配置)。
+# 不放行时 ssh2 退回纯 JS 模式(esbuild 平台二进制由 @esbuild/* 可选依赖提供),
+# 但 `pnpm install` 会以 ERR_PNPM_IGNORED_BUILDS 失败,连带 pnpm exec/run 也跑不起来。
+allowBuilds:
+  cpu-features: true
+  esbuild: true
+  ssh2: true
