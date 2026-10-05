@@ -114,6 +114,43 @@ const APP_CSS = `
 .sd-spin{display:inline-block;width:11px;height:11px;border:2px solid rgba(128,128,128,.35);
   border-top-color:#58a6ff;border-radius:50%;animation:sd-rot .8s linear infinite;vertical-align:-2px}
 @keyframes sd-rot{to{transform:rotate(360deg)}}
+/* ---- 文件视图(SFTP 传输) ---- */
+.sd-pane{flex:1;min-height:0;display:flex;flex-direction:column}
+.sd-files{display:flex;flex-direction:column;flex:1;min-height:0}
+.sd-files-bar{display:flex;align-items:center;gap:6px;padding:8px 10px;flex:none;
+  border-bottom:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.2));flex-wrap:wrap;row-gap:6px}
+.sd-files-bar .sd-title{font-size:13px;font-weight:600;margin-right:auto;min-width:40px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--dsw-alias-label-primary,#e6edf3)}
+.sd-files-path{display:flex;align-items:center;gap:6px;padding:7px 10px;flex:none;row-gap:6px;
+  border-bottom:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.15))}
+.sd-files-path input{flex:1;min-width:120px;border:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.3));
+  border-radius:6px;background:var(--dsw-alias-bg-base,#0d1117);color:var(--dsw-alias-label-primary,#e6edf3);
+  font-size:11px;padding:4px 7px;outline:none;font-family:inherit}
+.sd-files-path input:focus{border-color:#388bfd}
+.sd-files-path .sd-line{flex:1 1 100%;text-align:left;color:var(--dsw-alias-label-secondary,#8b949e)}
+.sd-filelist{flex:1;min-height:0;overflow:auto;padding:4px 8px}
+.sd-ftable{width:100%;border-collapse:collapse;font-size:11px;
+  color:var(--dsw-alias-label-primary,#c9d1d9)}
+.sd-ftable th{text-align:left;font-weight:500;font-size:10px;padding:5px 6px;position:sticky;top:0;
+  background:var(--dsw-alias-bg-layer-1,#16181d);color:var(--dsw-alias-label-secondary,#9aa1ab);
+  border-bottom:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.2));z-index:1}
+.sd-ftable td{padding:4px 6px;border-bottom:1px solid rgba(128,128,128,.10);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:0}
+.sd-ftable td:first-child{max-width:none;width:46%}
+.sd-ftable tr:hover td{background:rgba(88,166,255,.06)}
+.sd-ftable .num{text-align:right;font-variant-numeric:tabular-nums;
+  color:var(--dsw-alias-label-secondary,#9aa1ab)}
+.sd-ftable .dim{color:var(--dsw-alias-label-secondary,#8b949e)}
+.sd-fname .sd-link{background:none;border:none;padding:0;color:inherit;font-size:11px;cursor:pointer;
+  text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.sd-fname .sd-link:hover{color:#58a6ff;text-decoration:underline}
+.sd-fops{width:76px;text-align:right}
+.sd-fops .sd-btn{padding:1px 6px;font-size:10px;margin-left:3px}
+.sd-files-foot{display:flex;align-items:center;gap:10px;padding:6px 10px;flex:none;
+  border-top:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.2));font-size:10px;
+  color:var(--dsw-alias-label-secondary,#9aa1ab)}
+.sd-files-foot .sd-line{flex:1;text-align:right}
 `;
 
 let injected = false;

@@ -10,12 +10,20 @@
  *   GET    /metrics/settings      采集设置
  *   PATCH  /metrics/settings      改采集周期 / 总开关 / 每机暂停
  *   POST   /import-ssh-config     解析 ~/.ssh/config 并导入新主机
+ *   文件传输(SFTP 桥,池内连接的独立通道):
+ *   GET    /hosts/<id>/files?path=            列目录(path 空 = 登录目录)
+ *   GET    /hosts/<id>/files/content?path=    下载文件流(octet-stream + 附件名)
+ *   POST   /hosts/<id>/files/upload?path=     上传(request body 原始字节流)
+ *   POST   /hosts/<id>/files/mkdir            {path} 建目录
+ *   POST   /hosts/<id>/files/rm               {path,recursive} 删文件 / 目录
  * 访问面:仅回环放行(与 side-panel 同款防护)。
  */
 
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { pipeline } from 'node:stream/promises';
+import type { SFTPWrapper } from 'ssh2';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { HostEntry, HostInput, MetricsSettings } from '../types.ts';
 import {
@@ -34,6 +42,16 @@ import type { MetricStore } from './metric-store.ts';
 import type { MetricRecorder } from './recorder.ts';
 import type { SarBackfill } from './backfill.ts';
 import { parseSshConfig } from './sshconfig.ts';
+import {
+  listRemote,
+  mkdirRemote,
+  realpathOf,
+  removeRemote,
+  statOf,
+  SftpError,
+  toSftpError,
+  withSftp,
+} from './sftp.ts';
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
@@ -72,6 +90,64 @@ async function readJsonBody<T>(req: IncomingMessage): Promise<T> {
 }
 
 interface ImportBody { dryRun?: boolean }
+
+/** 远端路径末段(兼容 POSIX / Windows 分隔符)。 */
+function remoteBasename(p: string): string {
+  const parts = p.split(/[\\/]/u).filter((s) => s.length > 0);
+  return parts.length > 0 ? parts[parts.length - 1] : p;
+}
+
+/**
+ * RFC 6266 + RFC 5987 附件名:ASCII 兜底 + `filename*=UTF-8''…`,
+ * 中文文件名在各浏览器都拿得到正确名字。
+ */
+function contentDisposition(filename: string): string {
+  const ascii = filename.replace(/[^\x20-\x7e]/gu, '_').replace(/["\\]/gu, '_');
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
+/** request body → 远端文件(逐块写入,背压交给 Writable;客户端中断即中止)。 */
+async function streamIntoRemote(
+  req: IncomingMessage,
+  sftp: SFTPWrapper,
+  target: string,
+): Promise<number> {
+  const ws = sftp.createWriteStream(target, { flags: 'w' });
+  const failure = new Promise<never>((_, reject) => {
+    ws.once('error', reject);
+    req.once('error', reject);
+  });
+  // 成功路径不会 await failure,预挂一个 handler 防未处理拒绝告警。
+  void failure.catch(() => undefined);
+  let bytes = 0;
+  try {
+    for await (const chunk of req) {
+      const buf = chunk as Buffer;
+      bytes += buf.length;
+      if (!ws.write(buf)) {
+        await Promise.race([onceDrain(ws), failure]);
+      }
+    }
+    await Promise.race([endStream(ws), failure]);
+  } catch (error) {
+    try { ws.destroy(); } catch { /* 已关 */ }
+    throw toSftpError(error);
+  }
+  return bytes;
+}
+
+function onceDrain(ws: NodeJS.WritableStream): Promise<void> {
+  return new Promise((resolve) => { ws.once('drain', resolve); });
+}
+
+function endStream(ws: NodeJS.WritableStream): Promise<void> {
+  return new Promise((resolve, reject) => {
+    ws.once('error', reject);
+    ws.once('close', resolve);
+    ws.end();
+  });
+}
+
 
 /** Git 托管平台的 SSH 端点:密钥别名指向它们,不是可管理服务器。 */
 const GIT_HOSTING_HOSTS = new Set([
@@ -227,7 +303,77 @@ export function createApiRouter(
         return;
       }
 
+      // ---- 文件传输(SFTP 桥) ----
+      const fm = /^\/hosts\/([^/]+)\/files(?:\/(content|upload|mkdir|rm))?$/.exec(path);
+      if (fm !== null) {
+        const id = decodeURIComponent(fm[1]);
+        const kind = fm[2] ?? 'list';
+        if (store.get(id) === undefined) {
+          sendJson(res, 404, { error: '主机不存在' });
+          return;
+        }
+
+        if (kind === 'list' && method === 'GET') {
+          const listing = await withSftp(ssh, id, (sftp) => listRemote(sftp, url.searchParams.get('path') ?? ''));
+          sendJson(res, 200, { ok: true, ...listing });
+          return;
+        }
+
+        if (kind === 'content' && method === 'GET') {
+          const wanted = (url.searchParams.get('path') ?? '').trim();
+          if (wanted.length === 0) {
+            sendJson(res, 400, { error: 'path 不能为空' });
+            return;
+          }
+          await withSftp(ssh, id, async (sftp) => {
+            const abs = await realpathOf(sftp, wanted);
+            const info = await statOf(sftp, abs);
+            if (info.type === 'dir') throw new SftpError('不能下载目录,请逐个文件下载', 400);
+            res.writeHead(200, {
+              'content-type': 'application/octet-stream',
+              'content-length': String(info.size),
+              'content-disposition': contentDisposition(remoteBasename(abs)),
+              'cache-control': 'no-store',
+            });
+            await pipeline(sftp.createReadStream(abs), res);
+          });
+          return;
+        }
+
+        if (kind === 'upload' && method === 'POST') {
+          const wanted = (url.searchParams.get('path') ?? '').trim();
+          if (wanted.length === 0) {
+            sendJson(res, 400, { error: 'path 不能为空' });
+            return;
+          }
+          const bytes = await withSftp(ssh, id, async (sftp) => streamIntoRemote(req, sftp, wanted));
+          sendJson(res, 200, { ok: true, path: wanted, bytes });
+          return;
+        }
+
+        if (kind === 'mkdir' && method === 'POST') {
+          const body = await readJsonBody<{ path?: string }>(req);
+          const target = typeof body.path === 'string' ? body.path : '';
+          const created = await withSftp(ssh, id, (sftp) => mkdirRemote(sftp, target));
+          sendJson(res, 200, { ok: true, path: created });
+          return;
+        }
+
+        if (kind === 'rm' && method === 'POST') {
+          const body = await readJsonBody<{ path?: string; recursive?: boolean }>(req);
+          const target = typeof body.path === 'string' ? body.path : '';
+          const recursive = body.recursive === true;
+          const removed = await withSftp(ssh, id, (sftp) => removeRemote(sftp, target, recursive));
+          sendJson(res, 200, { ok: true, removed });
+          return;
+        }
+
+        sendJson(res, 405, { error: `不支持的方法或动作 ${method} ${path}` });
+        return;
+      }
+
       const m = /^\/hosts\/([^/]+)(\/test)?$/.exec(path);
+
       if (m !== null) {
         const id = decodeURIComponent(m[1]);
         if (method === 'PATCH') {
@@ -255,7 +401,13 @@ export function createApiRouter(
 
       sendJson(res, 404, { error: `未知路由 ${method} ${path}` });
     } catch (error) {
-      const status = (error as { status?: number }).status ?? 500;
+      // 下载已开始回流后中断:不能补 JSON,直接断开让客户端感知失败
+      if (res.headersSent) {
+        try { res.destroy(); } catch { /* 已断 */ }
+        return;
+      }
+      const explicit = (error as { status?: unknown }).status;
+      const status = typeof explicit === 'number' ? explicit : toSftpError(error).status;
       sendJson(res, status, { error: error instanceof Error ? error.message : String(error) });
     }
   };

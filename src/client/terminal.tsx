@@ -15,12 +15,16 @@ export interface TerminalPaneProps {
   /** user@host:port(副标签)。 */
   endpoint: string;
   onBack: () => void;
+  /** 切到文件传输视图(可选)。 */
+  onFiles?: () => void;
 }
 
 export function TerminalPane(props: TerminalPaneProps): React.ReactNode {
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const backRef = useRef(props.onBack);
   backRef.current = props.onBack;
+  const filesRef = useRef(props.onFiles);
+  filesRef.current = props.onFiles;
 
   useEffect(() => {
     const el = bodyRef.current;
@@ -47,7 +51,20 @@ export function TerminalPane(props: TerminalPaneProps): React.ReactNode {
     let ws: WebSocket | null = null;
     let disposed = false;
 
-    ws = new WebSocket(ptyUrl(props.hostId, Math.max(term.cols, 2), Math.max(term.rows, 2)));
+    // 地址拼装可能失败(桌面端自定义协议 + 缺 streamBaseUrl),单独兜住,
+    // 否则 effect 抛错会连终端本身都渲染不出来。
+    let url: string;
+    try {
+      url = ptyUrl(props.hostId, Math.max(term.cols, 2), Math.max(term.rows, 2));
+    } catch (error) {
+      term.writeln(`\r\n\x1b[31m[server-deck] ${error instanceof Error ? error.message : String(error)}\x1b[0m`);
+      return () => {
+        disposed = true;
+        term.dispose();
+      };
+    }
+
+    ws = new WebSocket(url);
     ws.binaryType = 'arraybuffer';
     ws.onopen = () => {
       if (!disposed) term.reset();
@@ -88,6 +105,9 @@ export function TerminalPane(props: TerminalPaneProps): React.ReactNode {
     <div className="sd-term-wrap">
       <div className="sd-term-head">
         <button className="sd-btn" onClick={() => backRef.current()}>← 返回</button>
+        {filesRef.current !== undefined ? (
+          <button className="sd-btn" onClick={() => filesRef.current?.()} title="上传 / 下载文件">📁 文件</button>
+        ) : null}
         <span className="sd-title" title={`${props.name} · ${props.endpoint}`}>{props.name}</span>
         <span className="sd-line">{props.endpoint}</span>
       </div>

@@ -3,7 +3,7 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { Client, type ClientChannel, type ConnectConfig } from 'ssh2';
+import { Client, type ClientChannel, type ConnectConfig, type SFTPWrapper } from 'ssh2';
 import type { HostEntry } from '../types.ts';
 
 const READY_TIMEOUT_MS = 10_000;
@@ -176,6 +176,23 @@ export class HostPool {
           conn.shell({ cols, rows, term: 'xterm-256color' }, (error, stream) => {
             if (error !== undefined && error !== null) reject(new Error(`打开 shell 失败:${messageOf(error)}`));
             else resolve(stream);
+          });
+        }),
+      (error) => { throw error; },
+    );
+  }
+
+  /**
+   * 在池内连接上开一条 SFTP 通道(文件传输用)。
+   * 用完必须 `sftp.end()` 关掉该通道——它独立于连接本身,泄漏会累积通道。
+   */
+  sftp(id: string): Promise<SFTPWrapper> {
+    return this.connect(id).then(
+      (conn) =>
+        new Promise((resolve, reject) => {
+          conn.sftp((error, wrapper) => {
+            if (error !== undefined && error !== null) reject(new Error(`打开 SFTP 失败:${messageOf(error)}`));
+            else resolve(wrapper);
           });
         }),
       (error) => { throw error; },

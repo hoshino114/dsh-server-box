@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- **文件传输**:卡片 / 趋势卡新增「📁 文件」入口,进入远端目录浏览器 —— 列目录(目录优先排序)、上传、下载、新建目录、删除(非空目录先确认再递归)。走 `/server-deck/api/hosts/<id>/files*` 的 SFTP 桥(池内长连接另开 SFTP 通道),REST 与 PTY 一致仅回环放行;桌面端经 Electron 代理,下载用 fetch→Blob→`a[download]`,附件名按 RFC 5987 交付(中文文件名可读)。
+- **对话工具**:`server_deck_upload`(本机 → 远端)与 `server_deck_download`(远端 → 本机),单文件 SFTP,自动创建本机父目录;与 `server_deck_exec` 同一条连接池。
+- **修复:DSH 桌面端 WebSocket 报错**。桌面端页面跑在自定义协议 `dsh-app://app` 上,旧的 `ptyUrl()` 用 `location.host` 拼出 `ws://app/...` 必然连不上;现改用 `__DSH_TRANSPORT__.streamBaseUrl`(Host 的回环 origin)再派生 `ws:`/`wss:`,正好命中 Electron 只放行 `ws://127.0.0.1:<port>/*` 的改写规则。Web 端行为不变(同源)。地址拼装失败时终端内联给出可读原因,不再白屏。
+- 终端页头新增「📁 文件」快捷入口;支持深链 `#sd-files/<hostId>`。
+- 新增联机自测 `scripts/itest-live.mjs`(对台账首台真机跑列表/上传/下载/建删/PTY 回显)与 `test/transfer.test.ts`(路径拼接、错误映射、WS 地址派生)。
+
 ## 0.4.0
 
 - 卡片新增实时网速（↓接收 / ↑发送）与当月流量累计。Linux 双快照 `/proc/net/dev`，Darwin/BSD `netstat -ibn`，Windows CIM 网卡差分；lo / docker / veth / br- / tun / wg 等虚拟口跳过，Proxmox `vmbr*` 与 Windows `vEthernet` 计入。Closes #20.

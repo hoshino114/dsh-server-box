@@ -26,12 +26,14 @@ import {
 } from './config.ts';
 import { Sparkline, valueClass } from './sparkline.tsx';
 import { TerminalPane } from './terminal.tsx';
+import { FilesPane } from './files.tsx';
 
 type View =
   | { kind: 'grid' }
   | { kind: 'trend' }
   | { kind: 'form'; host?: HostEntry }
-  | { kind: 'terminal'; host: HostEntry };
+  | { kind: 'terminal'; host: HostEntry }
+  | { kind: 'files'; host: HostEntry };
 
 interface Banner { kind: 'ok' | 'err'; text: string }
 
@@ -111,6 +113,12 @@ export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
           if (host !== undefined) setView({ kind: 'terminal', host });
           return;
         }
+        const mFiles = /^#sd-files\/(.+)$/.exec(raw);
+        if (mFiles !== null) {
+          const host = hosts.find((h) => h.id === decodeURIComponent(mFiles[1]));
+          if (host !== undefined) setView({ kind: 'files', host });
+          return;
+        }
         if (/^#sd-form/.test(raw)) setView({ kind: 'form' });
         else if (/^#sd-trend/.test(raw)) setView({ kind: 'trend' });
       }
@@ -132,6 +140,12 @@ export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
       if (mTerm !== null) {
         const host = hostsRef.current.find((h) => h.id === decodeURIComponent(mTerm[1]));
         if (host !== undefined) setView({ kind: 'terminal', host });
+        return;
+      }
+      const mFiles = /^#sd-files\/(.+)$/.exec(raw);
+      if (mFiles !== null) {
+        const host = hostsRef.current.find((h) => h.id === decodeURIComponent(mFiles[1]));
+        if (host !== undefined) setView({ kind: 'files', host });
         return;
       }
       if (/^#sd-form/.test(raw)) setView({ kind: 'form' });
@@ -307,7 +321,7 @@ export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
       <div className="sd-toolbar">
         {view.kind === 'trend' ? <button className="sd-btn" onClick={() => setView({ kind: 'grid' })}>← 卡片</button> : null}
         {view.kind === 'grid' ? <button className="sd-btn" onClick={() => setView({ kind: 'trend' })}>📈 趋势</button> : null}
-        {view.kind === 'form' || view.kind === 'terminal'
+        {view.kind === 'form' || view.kind === 'terminal' || view.kind === 'files'
           ? <button className="sd-btn" onClick={() => setView({ kind: 'grid' })}>← 卡片</button>
           : null}
         <h2>{title}</h2>
@@ -415,6 +429,7 @@ export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
                   status={statuses[h.id]}
                   busy={busyId === h.id}
                   onTerminal={() => setView({ kind: 'terminal', host: h })}
+                  onFiles={() => setView({ kind: 'files', host: h })}
                   onTest={() => void runTest(h)}
                   onEdit={() => setView({ kind: 'form', host: h })}
                   onDelete={() => void runDelete(h)}
@@ -444,6 +459,7 @@ export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
                   bucketMs={BUCKET_MS[(trendMeta?.bucketUsed ?? '30s') as keyof typeof BUCKET_MS] ?? 30_000}
                   busy={busyId === h.id}
                   onTerminal={() => setView({ kind: 'terminal', host: h })}
+                  onFiles={() => setView({ kind: 'files', host: h })}
                   onTest={() => void runTest(h)}
                   onEdit={() => setView({ kind: 'form', host: h })}
                   onDelete={() => void runDelete(h)}
@@ -470,7 +486,20 @@ export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
           name={view.host.name}
           endpoint={`${view.host.username}@${view.host.host}:${String(view.host.port)}`}
           onBack={() => setView({ kind: 'grid' })}
+          onFiles={() => setView({ kind: 'files', host: view.host })}
         />
+      ) : null}
+
+      {view.kind === 'files' ? (
+        <div className="sd-pane">
+          <FilesPane
+            hostId={view.host.id}
+            name={view.host.name}
+            endpoint={`${view.host.username}@${view.host.host}:${String(view.host.port)}`}
+            onBack={() => setView({ kind: 'grid' })}
+            onTerminal={() => setView({ kind: 'terminal', host: view.host })}
+          />
+        </div>
       ) : null}
     </div>
   );
@@ -514,6 +543,7 @@ function ServerCard(props: {
   status?: HostStatus;
   busy: boolean;
   onTerminal: () => void;
+  onFiles: () => void;
   onTest: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -563,6 +593,14 @@ function ServerCard(props: {
           title={status?.state === 'offline' ? '主机当前离线' : '打开交互终端'}
         >
           ⌨ 终端
+        </button>
+        <button
+          className="sd-btn"
+          disabled={props.busy || status?.state === 'offline'}
+          onClick={props.onFiles}
+          title={status?.state === 'offline' ? '主机当前离线' : '浏览 / 传输文件(SFTP)'}
+        >
+          📁 文件
         </button>
         <button className="sd-btn" disabled={props.busy} onClick={props.onTest}>{props.busy ? <i className="sd-spin" /> : '测试'}</button>
         <button className="sd-btn" onClick={props.onEdit}>✎</button>
@@ -616,6 +654,7 @@ function TrendCard(props: {
   bucketMs: number;
   busy: boolean;
   onTerminal: () => void;
+  onFiles: () => void;
   onTest: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -649,6 +688,14 @@ function TrendCard(props: {
           title={status?.state === 'offline' ? '主机当前离线' : '打开交互终端'}
         >
           ⌨ 终端
+        </button>
+        <button
+          className="sd-btn"
+          disabled={props.busy || status?.state === 'offline'}
+          onClick={props.onFiles}
+          title={status?.state === 'offline' ? '主机当前离线' : '浏览 / 传输文件(SFTP)'}
+        >
+          📁 文件
         </button>
         <button className="sd-btn" disabled={props.busy} onClick={props.onTest}>{props.busy ? <i className="sd-spin" /> : '测试'}</button>
         <button className="sd-btn" onClick={props.onEdit}>✎</button>

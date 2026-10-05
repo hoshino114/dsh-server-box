@@ -27,6 +27,7 @@ export function registerExecTools(
     text: [
       'Use server_deck_hosts then server_deck_exec to run a non-interactive command on a host from the Server Deck ledger (same SSH as the card terminal, not the open xterm).',
       'Identify the machine with id / name / IP. On Windows OpenSSH, commands are wrapped for PowerShell DefaultShell; prefix cmd.exe / powershell.exe if you need a specific interpreter.',
+      'To move files to or from such a host use server_deck_upload (local → remote) and server_deck_download (remote → local); they use SFTP, one file at a time.',
       'Do not use these tools for interactive sudo/password prompts — tell the user to open the card terminal.',
     ].join(' '),
   });

@@ -3,13 +3,16 @@
  *
  * 服务端(本文件):
  *   - /server-deck/api/*  主机台账 CRUD + 连通测试 + 状态快照 + 趋势查询(仅回环)
+ *   - /server-deck/api/hosts/<id>/files*  SFTP 文件传输:列目录 / 上传 / 下载 / 建目录 / 删除
  *   - /server-deck/ws/pty 升级路由:xterm 终端 ↔ ssh2 shell 双向桥
  *   - MetricRecorder 常驻采集(默认 10s),与前端是否打开面板无关
  *   - SarBackfill:本地序列未覆盖的窗口,从服务器 sysstat(sar)回填历史
  *   - server_deck_hosts / server_deck_exec:对话里对台账主机非交互 SSH 下发(不走卡片 xterm)
+ *   - server_deck_upload / server_deck_download:对话里本机 ⇄ 台账主机的 SFTP 传输
  *
  * 客户端(lib/client.js):双形态挂载——ctx.betterSidebar 可用 → registerTab
  * 「服务器」页签;不可用 → 自绘右侧展开/收起面板(见 src/mount.ts)。
+ * WS 地址按 Host origin 派生(桌面端 dsh-app:// 页面取 __DSH_TRANSPORT__.streamBaseUrl)。
  */
 
 import type {} from '@deepseek-ai/dsh-host-webserver';
@@ -22,6 +25,7 @@ import { MetricStore } from './server/metric-store.ts';
 import { MetricRecorder } from './server/recorder.ts';
 import { SarBackfill } from './server/backfill.ts';
 import { registerExecTools } from './server/exec-tools.ts';
+import { registerTransferTools } from './server/transfer-tools.ts';
 
 /** Cordis 插件名,loader 诊断使用。 */
 const name = 'server-deck';
@@ -76,6 +80,7 @@ export function apply(ctx: Context): void {
   );
 
   registerExecTools(ctx as Parameters<typeof registerExecTools>[0], store, pool, recorder);
+  registerTransferTools(ctx as Parameters<typeof registerTransferTools>[0], store, pool);
 }
 
 export { inject, name };
