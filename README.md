@@ -12,12 +12,6 @@
 > 指标 `~/.dsh/server-deck-metrics/` → `server-box-metrics/`,已配置的主机与历史趋势不会丢。
 > 对话工具同步改名:`server_deck_*` → `server_box_*`;路由前缀 `/server-deck/*` → `/server-box/*`。
 
-## 🤝 合作伙伴：米云
-
-<a href="https://momotoken.win"><img src="docs/assets/miyun-banner.png" alt="米云 MIYUN · 多模型 AI API 聚合平台 momotoken.win" width="760"></a>
-
-**[米云 MIYUN](https://momotoken.win)** —— 多模型 AI API 聚合平台：稳定不降智，模型上线快又多；统一 API 接入、按量使用、余额集中管理。
-
 ## ⭐ 欢迎点星收藏
 
 如果 server-box 帮到了你，欢迎到 [GitHub 仓库](https://github.com/hoshino114/dsh-server-box) 点个 Star ⭐，让更多 DSH 用户看到它。问题与建议请提 Issue。
@@ -98,6 +92,10 @@ xterm.js 全功能终端:5000 行回滚、256 色、窗口尺寸实时同步、�
 | 新建 / 删除 | 建目录;删文件或目录,非空目录先提示再递归 |
 
 传输走池内长连接另开的 SFTP 通道(用完即关),接口挂在 `/server-box/api/hosts/<id>/files*`,与 REST / PTY 一致**仅回环放行**;桌面端经 Electron 代理,Web 端同源直连。
+
+<p align="center">
+  <img src="docs/screenshots/files.png" width="360" alt="文件管理:远端目录浏览 / 上传 / 下载">
+</p>
 
 对话里也能传:`server_box_upload`(本机 → 远端)与 `server_box_download`(远端 → 本机),单文件、自动建本机父目录。
 
