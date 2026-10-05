@@ -6,6 +6,7 @@
 - **对话工具**:`server_deck_upload`(本机 → 远端)与 `server_deck_download`(远端 → 本机),单文件 SFTP,自动创建本机父目录;与 `server_deck_exec` 同一条连接池。
 - **修复:DSH 桌面端 WebSocket 报错**。桌面端页面跑在自定义协议 `dsh-app://app` 上,旧的 `ptyUrl()` 用 `location.host` 拼出 `ws://app/...` 必然连不上;现改用 `__DSH_TRANSPORT__.streamBaseUrl`(Host 的回环 origin)再派生 `ws:`/`wss:`,正好命中 Electron 只放行 `ws://127.0.0.1:<port>/*` 的改写规则。Web 端行为不变(同源)。地址拼装失败时终端内联给出可读原因,不再白屏。
 - 终端页头新增「📁 文件」快捷入口;支持深链 `#sd-files/<hostId>`。
+- 文件视图工具条重排为两行:第一行「↑ 上级 | 路径 | 转到 | ⟳」、第二行「📂 新建目录 | ⬆ 上传 … ⌨ 终端」,去掉与父级工具栏重复的「← 返回 / 标题」;页脚改「N 项 + 端点」两端对齐,列表加载失败时不再误显示「空目录」。
 - 新增联机自测 `scripts/itest-live.mjs`(对台账首台真机跑列表/上传/下载/建删/PTY 回显)与 `test/transfer.test.ts`(路径拼接、错误映射、WS 地址派生)。
 
 ## 0.4.0

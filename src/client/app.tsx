@@ -496,7 +496,6 @@ export function ServerDeckApp(props: { visible: boolean }): React.ReactNode {
             hostId={view.host.id}
             name={view.host.name}
             endpoint={`${view.host.username}@${view.host.host}:${String(view.host.port)}`}
-            onBack={() => setView({ kind: 'grid' })}
             onTerminal={() => setView({ kind: 'terminal', host: view.host })}
           />
         </div>

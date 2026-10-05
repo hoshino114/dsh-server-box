@@ -12,11 +12,10 @@ import type { RemoteFileEntry } from './api.ts';
 
 export interface FilesPaneProps {
   hostId: string;
-  /** 展示名(标题)。 */
+  /** 展示名(父级工具栏标题;这里仅作提示属性)。 */
   name: string;
-  /** user@host:port(副标签)。 */
+  /** user@host:port(页脚副标签)。 */
   endpoint: string;
-  onBack: () => void;
   /** 切到终端视图(可选)。 */
   onTerminal?: () => void;
 }
@@ -175,17 +174,39 @@ export function FilesPane(props: FilesPaneProps): React.ReactNode {
   }, [pathInput, load]);
 
   return (
-    <div className="sd-files">
+    <div className="sd-files" title={`${props.name} · ${props.endpoint}`}>
+      {/* 行1:路径导航(返回/标题由父级工具栏承担,这里不再重复) */}
+      <div className="sd-files-path">
+        <button
+          className="sd-btn"
+          disabled={parent === null || loading}
+          onClick={goUp}
+          title={parent ?? '已在根目录'}
+        >
+          ↑ 上级
+        </button>
+        <input
+          value={pathInput}
+          placeholder="远端路径,如 /var/log 或 C:\Users"
+          title={cwd}
+          onChange={(e) => setPathInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') goto(); }}
+        />
+        <button className="sd-btn" disabled={loading || pathInput.trim().length === 0} onClick={goto}>转到</button>
+        <button className="sd-btn" disabled={loading} onClick={() => void load(cwd)} title="刷新当前目录">⟳</button>
+      </div>
+
+      {/* 行2:动作(主操作靠左,终端入口靠右) */}
       <div className="sd-files-bar">
-        <button className="sd-btn" onClick={props.onBack}>← 返回</button>
-        {props.onTerminal !== undefined ? (
-          <button className="sd-btn" onClick={props.onTerminal} title="打开交互终端">⌨ 终端</button>
-        ) : null}
-        <span className="sd-title" title={`${props.name} · ${props.endpoint}`}>{props.name}</span>
-        <button className="sd-btn" disabled={parent === null || loading} onClick={goUp} title="上级目录">↑ 上级</button>
-        <button className="sd-btn" disabled={loading} onClick={() => void load(cwd)} title="刷新">⟳</button>
-        <button className="sd-btn" disabled={busy || loading} onClick={() => void mkdir()}>📂 新建目录</button>
-        <button className="sd-btn primary" disabled={busy || loading} onClick={() => fileRef.current?.click()}>
+        <button className="sd-btn" disabled={busy || loading} onClick={() => void mkdir()} title="在当前目录新建文件夹">
+          📂 新建目录
+        </button>
+        <button
+          className="sd-btn primary"
+          disabled={busy || loading}
+          onClick={() => fileRef.current?.click()}
+          title="上传到当前目录"
+        >
           {busy ? <><i className="sd-spin" /> 处理中</> : '⬆ 上传'}
         </button>
         <input
@@ -198,17 +219,10 @@ export function FilesPane(props: FilesPaneProps): React.ReactNode {
             if (file !== undefined) void upload(file);
           }}
         />
-      </div>
-
-      <div className="sd-files-path">
-        <input
-          value={pathInput}
-          placeholder="远端路径,如 /var/log 或 C:\Users"
-          onChange={(e) => setPathInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') goto(); }}
-        />
-        <button className="sd-btn" disabled={loading} onClick={goto}>转到</button>
-        <span className="sd-line" title={cwd}>{cwd}</span>
+        <span className="sd-flex-gap" />
+        {props.onTerminal !== undefined ? (
+          <button className="sd-btn" onClick={props.onTerminal} title="打开交互终端">⌨ 终端</button>
+        ) : null}
       </div>
 
       {error !== null ? <div style={{ padding: '6px 10px 0' }}><div className="sd-msg err">{error}</div></div> : null}
@@ -218,7 +232,7 @@ export function FilesPane(props: FilesPaneProps): React.ReactNode {
         {loading && entries.length === 0 ? (
           <div className="sd-empty"><i className="sd-spin" /> 读取远端目录…</div>
         ) : entries.length === 0 ? (
-          <div className="sd-empty">空目录</div>
+          error === null ? <div className="sd-empty">空目录</div> : null
         ) : (
           <table className="sd-ftable">
             <thead>
@@ -230,7 +244,7 @@ export function FilesPane(props: FilesPaneProps): React.ReactNode {
                   <td className="sd-fname">
                     <button
                       className="sd-link"
-                      title={entry.type === 'file' ? entry.name : `打开 ${entry.name}`}
+                      title={entry.type === 'file' ? `下载 ${entry.name}` : `打开 ${entry.name}`}
                       onClick={() => (entry.type === 'file' ? void download(entry) : openEntry(entry))}
                     >
                       {typeIcon(entry.type)} {entry.name}
@@ -259,8 +273,8 @@ export function FilesPane(props: FilesPaneProps): React.ReactNode {
       </div>
 
       <div className="sd-files-foot">
-        {loading ? <span><i className="sd-spin" /> 加载中</span> : <span>{String(entries.length)} 项</span>}
-        <span className="sd-line">点目录进入,点文件直接下载;上传 / 下载走 SFTP,仅回环可达</span>
+        <span className="sd-count">{loading ? <><i className="sd-spin" /> 读取中</> : `${String(entries.length)} 项`}</span>
+        <span className="sd-line" title={`${props.name} · ${props.endpoint}`}>{props.endpoint}</span>
       </div>
     </div>
   );

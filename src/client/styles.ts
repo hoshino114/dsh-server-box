@@ -117,18 +117,14 @@ const APP_CSS = `
 /* ---- 文件视图(SFTP 传输) ---- */
 .sd-pane{flex:1;min-height:0;display:flex;flex-direction:column}
 .sd-files{display:flex;flex-direction:column;flex:1;min-height:0}
-.sd-files-bar{display:flex;align-items:center;gap:6px;padding:8px 10px;flex:none;
-  border-bottom:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.2));flex-wrap:wrap;row-gap:6px}
-.sd-files-bar .sd-title{font-size:13px;font-weight:600;margin-right:auto;min-width:40px;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--dsw-alias-label-primary,#e6edf3)}
-.sd-files-path{display:flex;align-items:center;gap:6px;padding:7px 10px;flex:none;row-gap:6px;
-  border-bottom:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.15))}
-.sd-files-path input{flex:1;min-width:120px;border:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.3));
+.sd-files-bar{display:flex;align-items:center;gap:6px;padding:7px 10px;flex:none;flex-wrap:wrap;row-gap:6px;
+  border-bottom:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.2))}
+.sd-files-bar .sd-flex-gap{flex:1 1 auto;min-width:0}
+.sd-files-path{display:flex;align-items:center;gap:6px;padding:7px 10px;flex:none;flex-wrap:wrap;row-gap:6px}
+.sd-files-path input{flex:1 1 120px;min-width:0;border:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.3));
   border-radius:6px;background:var(--dsw-alias-bg-base,#0d1117);color:var(--dsw-alias-label-primary,#e6edf3);
   font-size:11px;padding:4px 7px;outline:none;font-family:inherit}
 .sd-files-path input:focus{border-color:#388bfd}
-.sd-files-path .sd-line{flex:1 1 100%;text-align:left;color:var(--dsw-alias-label-secondary,#8b949e)}
 .sd-filelist{flex:1;min-height:0;overflow:auto;padding:4px 8px}
 .sd-ftable{width:100%;border-collapse:collapse;font-size:11px;
   color:var(--dsw-alias-label-primary,#c9d1d9)}
@@ -147,10 +143,12 @@ const APP_CSS = `
 .sd-fname .sd-link:hover{color:#58a6ff;text-decoration:underline}
 .sd-fops{width:76px;text-align:right}
 .sd-fops .sd-btn{padding:1px 6px;font-size:10px;margin-left:3px}
-.sd-files-foot{display:flex;align-items:center;gap:10px;padding:6px 10px;flex:none;
-  border-top:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.2));font-size:10px;
+.sd-files-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 10px;
+  flex:none;border-top:1px solid var(--dsw-alias-border-l1,rgba(128,128,128,.2));font-size:10px;
   color:var(--dsw-alias-label-secondary,#9aa1ab)}
-.sd-files-foot .sd-line{flex:1;text-align:right}
+.sd-files-foot .sd-count{flex:none;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sd-files-foot .sd-line{flex:1 1 auto;min-width:0;text-align:right;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
 `;
 
 let injected = false;
